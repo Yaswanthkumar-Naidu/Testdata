@@ -1,0 +1,14 @@
+ testStepDetails.logAPIDetails( testCaseParam,  apiname,
+LocalDateTime
+.
+now
+(), apiReportModel.getTestStepResult(),apiReportModel.getUrl(),apiReportModel.getRequest(), apiReportModel.getActualResponse());
+
+===================
+ extentUtilities.initializeNewTestCase(testCaseParam.getTestCaseName(), testCaseParam.getTestCaseDescription(), testCaseParam.getModuleName(),testCaseParam.getTestCaseCategory(), testCaseParam.getBrowser());
+===================
+TestManager.
+updateTestCaseStatus
+(testCaseParam.getTestCaseName(), testCaseParam.getModuleName(), testCaseParam.getBrowser(),TestManager.HTMLTCStatus.
+PASSED
+);

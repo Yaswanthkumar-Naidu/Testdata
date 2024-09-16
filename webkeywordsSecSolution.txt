@@ -1,44 +1,53 @@
 
-	public String getLocatorFromWebElement(WebElement element, WebDriver drivernew, TestCaseParam testCaseParam, PageDetails pageDetails) throws IOException {
-    if (element == null) {
-        logger.warn("Received null WebElement");
-        return "";
-    }
+public String getLocatorFromWebElement(WebElement element, WebDriver drivernew, TestCaseParam testCaseParam, PageDetails pageDetails) throws IOException {
+	   
+	    final int MAX_ELEMENT_STRING_LENGTH = 1000;
+	    final int MAX_SPLIT_PARTS = 2;
 
-    String elementString = element.toString();
-    if (elementString.isEmpty() || elementString.length() > 1000) {
-        logger.warn("Invalid WebElement string");
-        return "";
-    }
+	    String elementString = element.toString();
+	    if (elementString == null || elementString.isEmpty()) {
+	        logger.warn("Received null or empty WebElement string");
+	        return "";
+	    }
 
-    int arrowIndex = elementString.indexOf("->");
-    int bracketIndex = elementString.lastIndexOf(']');
-    
-    if (arrowIndex == -1 || bracketIndex == -1 || arrowIndex >= bracketIndex) {
-        logger.warn("Invalid WebElement string format");
-        return "";
-    }
+	    if (elementString.length() > MAX_ELEMENT_STRING_LENGTH) {
+	        logger.warn("WebElement string exceeds maximum allowed length");
+	        throw new IllegalArgumentException("WebElement string exceeds maximum allowed length");
+	    }
 
-    String locatorSt    int colonIndex = locatorString.indexOf(':');
-    
-    if (colonIndex == -1) {
-        logger.warn("Invalid locator string format");
-        return "";
-    }
+	    String[] parts = elementString.split("->", MAX_SPLIT_PARTS);
+	    if (parts.length < MAX_SPLIT_PARTS) {
+	        logger.warn("WebElement string does not contain expected delimiter");
+	        return "";
+	    }
 
-    String locatorType = locatorString.substring(0, colonIndex).trim();
-    String locatorValue = locatorString.substring(colonIndex + 1).trim();
+	    String locatorOutput = parts[1];
+	    int lastBracketIndex = locatorOutput.lastIndexOf(']');
+	    if (lastBracketIndex != -1) {
+	        locatorOutput = locatorOutput.substring(0, lastBracketIndex);
+	    }
 
-    if (locatorType.isEmpty() || locatorValue.isEmpty()) {
-        logger.warn("Invalid locator parts");
-        return "";
-    }
+	    String[] splitLocator = locatorOutput.split(": ", MAX_SPLIT_PARTS);
+	    if (splitLocator.length < MAX_SPLIT_PARTS) {
+	        logger.warn("Locator string does not contain expected delimiter");
+	        return "";
+	    }
 
-    return getElementText(drivernew, locatorType, locatorValue, testCaseParam, pageDetails);
-}
+	    splitLocator[0] = splitLocator[0].trim();
+	    splitLocator[1] = splitLocator[1].trim();
+
+	    if (splitLocator[0].isEmpty() || splitLocator[1].isEmpty()) {
+	        logger.warn("Invalid locator parts");
+	        return "";
+	    }
+
+	    return getElementText(drivernew, splitLocator[0], splitLocator[1], testCaseParam, pageDetails);
+	}
 
 	
 	========================================
+	
+	
 		public By getLocatorvalue(WebElement element) {
 	    if (element == null) {
 	        throw new IllegalArgumentException("WebElement cannot be null");

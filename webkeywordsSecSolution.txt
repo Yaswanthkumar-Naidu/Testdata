@@ -1,0 +1,77 @@
+
+	public String getLocatorFromWebElement(WebElement element, WebDriver drivernew, TestCaseParam testCaseParam, PageDetails pageDetails) throws IOException {
+    if (element == null) {
+        logger.warn("Received null WebElement");
+        return "";
+    }
+
+    String elementString = element.toString();
+    if (elementString.isEmpty() || elementString.length() > 1000) {
+        logger.warn("Invalid WebElement string");
+        return "";
+    }
+
+    int arrowIndex = elementString.indexOf("->");
+    int bracketIndex = elementString.lastIndexOf(']');
+    
+    if (arrowIndex == -1 || bracketIndex == -1 || arrowIndex >= bracketIndex) {
+        logger.warn("Invalid WebElement string format");
+        return "";
+    }
+
+    String locatorSt    int colonIndex = locatorString.indexOf(':');
+    
+    if (colonIndex == -1) {
+        logger.warn("Invalid locator string format");
+        return "";
+    }
+
+    String locatorType = locatorString.substring(0, colonIndex).trim();
+    String locatorValue = locatorString.substring(colonIndex + 1).trim();
+
+    if (locatorType.isEmpty() || locatorValue.isEmpty()) {
+        logger.warn("Invalid locator parts");
+        return "";
+    }
+
+    return getElementText(drivernew, locatorType, locatorValue, testCaseParam, pageDetails);
+}
+
+	
+	========================================
+		public By getLocatorvalue(WebElement element) {
+	    if (element == null) {
+	        throw new IllegalArgumentException("WebElement cannot be null");
+	    }
+
+	    String elementString = element.toString();
+	    if (elementString.isEmpty() || elementString.length() > 1000) {
+	        throw new IllegalArgumentException("Invalid WebElement string");
+	    }
+
+	    int arrowIndex = elementString.indexOf("->");
+	    int bracketIndex = elementString.lastIndexOf(']');
+	    
+	    if (arrowIndex == -1 || bracketIndex == -1 || arrowIndex >= bracketIndex) {
+	        throw new IllegalArgumentException("Invalid WebElement string format");
+	    }
+
+	    String locatorString = elementString.substring(arrowIndex + 2, bracketIndex).trim();
+	    int colonIndex = locatorString.indexOf(':');
+	    
+	    if (colonIndex == -1) {
+	        throw new IllegalArgumentException("Invalid locator string format");
+	    }
+
+	    String locatorType = locatorString.substring(0, colonIndex).trim();
+	    String locatorValue = locatorString.substring(colonIndex + 1).trim();
+
+	    if (locatorType.isEmpty() || locatorValue.isEmpty()) {
+	        throw new IllegalArgumentException("Invalid locator parts");
+	    }
+
+	    return getlocatorvalueforwait(locatorType, locatorValue);
+	}
+	
+	==========================
+		private static final Pattern PATTERN = Pattern.compile("(\\D{0,100})(\\d{1,10})");

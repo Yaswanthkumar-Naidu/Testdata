@@ -1,0 +1,93 @@
+boolean testFailed = false;
+
+if (ts.extentStatus == Status.FAIL) {    testFailed = true;}
+
+if (testFailed) {    test.fail("Test case failed due to one or more failed steps.");} else {    test.pass("Test case passed.");}
+=============================
+
+public void startTest(String testCase, String moduleName, String browser, String testcaseDescription) throws InterruptedException {
+		try {
+			ExtentTest tc = extent.createTest(testCase, testcaseDescription);
+			ExtentTest test = tc.createNode("Iteration==>1");
+			test.assignCategory(browser);
+			test.assignCategory(moduleName);
+			Thread.sleep(0);
+			tcExtentMapping.put(testCase + "_" + moduleName + "_" + browser, test);
+			parentTestMap.put(testCase + "_" + moduleName + "_" + browser, tc); // Track the parent node
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt(); // Preserve the interrupted status
+			throw new InterruptedException("Thread was interrupted"); // Rethrow as a RuntimeException or handle appropriately
+		} catch (Exception e) {
+			logger.info("Unable to initialize the Extent Test Case ==> {}", testCase);
+			logger.info(Arrays.toString(e.getStackTrace()));
+			logger.info(e.getMessage());
+			// Log the failure status
+			ExtentTest tc = extent.createTest(testCase, testcaseDescription);
+			tc.fail("Initialization failed: " + e.getMessage());
+		}
+	}
+
+======
+public void addTestStepsLogs(TestCaseParam testCaseParam, TestStepDetails tsDetails) {
+		try {
+			String testCaseKey = testCaseParam.getTestCaseName() + "_" + testCaseParam.getModuleName() + "_" + testCaseParam.getBrowser();
+			ExtentTest test = tcExtentMapping.get(testCaseKey);
+ 
+			if (tsDetails.testStepType == TestStepDetails.TestStepType.TEST_STEP ||
+					tsDetails.testStepType == TestStepDetails.TestStepType.VERIFICATION ||
+					tsDetails.testStepType == TestStepDetails.TestStepType.EXCEPTION) {
+ 
+				if (tsDetails.screenShotData.equals("")) {
+					test.log(tsDetails.extentStatus, tsDetails.stepName);
+				} else {
+					test.log(tsDetails.extentStatus, writeImageToReport(tsDetails.screenShotData, tsDetails.stepName));
+				}
+ 
+				// Update the test case status
+				if (tsDetails.extentStatus == Status.FAIL) {
+					testCaseStatusMap.put(testCaseKey, Status.FAIL);
+				} else if (!testCaseStatusMap.containsKey(testCaseKey)) {
+					testCaseStatusMap.put(testCaseKey, Status.PASS);
+				}
+			}
+ 
+			if (tsDetails.testStepType == TestStepDetails.TestStepType.MODULE) {
+				test.log(Status.INFO, moduleLoggerHeaderLine + tsDetails.moduleName + loggerHeaderLine);
+			}
+ 
+			if (tsDetails.testStepType == TestStepDetails.TestStepType.SCREEN) {
+				test.log(Status.INFO, screenLoggerHeaderLine + tsDetails.screenName + loggerHeaderLine);
+			}
+ 
+			if (tsDetails.testStepType == TestStepDetails.TestStepType.MODULE_SCREEN) {
+				test.log(Status.INFO, moduleLoggerHeaderLine + tsDetails.moduleName + loggerHeaderLine);
+				test.log(Status.INFO, screenLoggerHeaderLine + tsDetails.screenName + loggerHeaderLine);
+			}
+		} catch (Exception e) {
+			logger.info("Unable to update the Extent Test Step ==> {} ", tsDetails.stepName);
+			logger.info(Arrays.toString(e.getStackTrace()));
+			logger.info(e.getMessage());
+		}
+	}
+==========
+
+public static void endReportTear() {
+		for (Map.Entry<String, Status> entry : testCaseStatusMap.entrySet()) {
+			String testCaseKey = entry.getKey();
+			Status status = entry.getValue();
+			ExtentTest parentTest = parentTestMap.get(testCaseKey);
+ 
+			if (status == Status.FAIL) {
+				parentTest.fail("Overall test case failed due to one or more failed steps.");
+			} else {
+				parentTest.pass("Overall test case passed.");
+			}
+		}
+ 
+	}
+==================
+private static Map<String, Status> testCaseStatusMap = new HashMap<>();
+	private static Map<String, ExtentTest> parentTestMap = new HashMap<>();
+
+============
+ExtentReport.endReportTear();

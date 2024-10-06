@@ -1,0 +1,25 @@
+package commonutilities.common.actionkeywords;
+
+public class ExceptionClass extends Exception {
+    
+    public ExceptionClass(String message) {
+        super(message);
+    }
+
+    public ExceptionClass(String message, Throwable cause) {
+        super(message, cause);
+    }
+}
+
+=================================
+
+	} catch (InterruptedException e) {
+	    logger.error("Operation interrupted: {}", action.getPageActionDescription());
+	    Thread.currentThread().interrupt(); // Restore the interrupted status
+	    //exceptionDetails.logExceptionDetails(driver, testCaseParam, action.getPageActionName(), action.getPageActionDescription(), LocalDateTime.now(), e);
+	    throw new ExceptionClass("Operation was interrupted", e);
+	} catch (Exception a) {
+	    logger.error(FAILED, action.getPageActionDescription());
+	    //exceptionDetails.logExceptionDetails(driver, testCaseParam, action.getPageActionName(), action.getPageActionDescription(), LocalDateTime.now(), a);
+	    throw new ExceptionClass(a.getMessage());
+	  }

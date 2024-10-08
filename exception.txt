@@ -23,3 +23,65 @@ public class ExceptionClass extends Exception {
 	    //exceptionDetails.logExceptionDetails(driver, testCaseParam, action.getPageActionName(), action.getPageActionDescription(), LocalDateTime.now(), a);
 	    throw new ExceptionClass(a.getMessage());
 	  }
+
+
+==========================================================
+---------------------------------------------------------
+ private static ThreadLocal<WebDriver> driverThreadLocal = new ThreadLocal<>();
+	 private static final Object lock = new Object();
+	 
+	    public static WebDriver getDriver() {
+	        return driverThreadLocal.get();
+	    }
+
+	    public static void setDriver(WebDriver driver) {
+	        driverThreadLocal.set(driver);
+	    }
+
+	    public static void removeDriver() {
+	        WebDriver driver = driverThreadLocal.get();
+	        if (driver != null) {
+	            try {
+	                driver.quit();
+	            } catch (Exception e) {
+	                System.err.println("Error quitting driver: " + e.getMessage());
+	            }
+	        }
+	        driverThreadLocal.remove();
+	    }
+
+==================
+	public WebDriver initializeDriver()
+	{
+		synchronized (lock) {
+            System.out.println("Initializing driver for thread: " + Thread.currentThread().getId());
+            if (driverThreadLocal.get() != null) {
+                System.out.println("Driver already exists for thread: " + Thread.currentThread().getId());
+                return driverThreadLocal.get();
+            }
+		WebDriverManager.chromedriver().setup();
+	
+		ChromeOptions options= new ChromeOptions();
+		options.setAcceptInsecureCerts(true);
+
+		options.addArguments("start-maximized"); // open Browser in maximized mode
+		options.addArguments("disable-infobars"); // disabling infobars
+		options.addArguments("--disable-extensions"); // disabling extensions
+		options.addArguments("--disable-gpu"); // applicable to windows os only
+		options.addArguments("--disable-dev-shm-usage"); // overcome limited resource problems
+		options.addArguments("--no-sandbox"); // Bypass OS security model
+		options.addArguments("--use-fake-ui-for-media-stream=1");
+
+		// To run test case in head less mode
+		if(TestRunSettings.getRunInHeadlessMode().equalsIgnoreCase("Yes")) {
+			options.addArguments("--headless", "--window-size=1920,1200");
+		}
+		
+		WebDriver driver= new ChromeDriver(options);
+		driver.manage().deleteAllCookies();
+		driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+		 setDriver(driver);
+         System.out.println("Driver initialized for thread: " + Thread.currentThread().getId());
+         return driver;
+		}
+	}

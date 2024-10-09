@@ -1,0 +1,43 @@
+public void waitElementToBeVisible(WebDriver drivernew, WebElement element, TestCaseParam testCaseParam, PageDetails pageDetails) throws CustomException{
+		String actionDescription = element.toString();
+		LocalDateTime startTime = LocalDateTime.now();
+		String action = FIND_ACTION_PREFIX + getLocatorFromWebElement(element, drivernew, testCaseParam, pageDetails);
+		
+		try {
+			WebDriverWait wait = new WebDriverWait(drivernew, 20);
+			wait.pollingEvery(Duration.ofMillis(500));
+			wait.ignoring(StaleElementReferenceException.class);
+			wait.until(ExpectedConditions.visibilityOf(element));
+		}catch(Exception e) {
+			logger.error(LOG_FAILED_FORMAT, action, actionDescription);
+			testStepDetails.logExceptionDetails(drivernew, testCaseParam, action, getActionDescription(action,actionDescription), startTime, e);
+			testStepDetails.logTestStepDetails(drivernew, testCaseParam, action, getActionDescription(action,actionDescription), pageDetails, startTime, STATUSFAIL);
+			throw new CustomException(e.getMessage());	
+		}
+	}
+
+=====================
+
+public String getActionDescription(String action,String actionDesc) {
+		String [] res;
+		String desc;
+		if(action.equalsIgnoreCase(CLICK_ACTION_PREFIX)) {
+			res = actionDesc.split("Proxy element for:");
+			desc = res[1].trim();
+			return "Can not click on the object " + desc + " is not displayed on the current screen";
+		}else if (action.equalsIgnoreCase(ENTERED_TEXT)) {
+			desc = actionDesc;
+			return "Can not find the object " + desc + " is not displayed on the current screen";
+		}else if(action.contains(VRIFYELEMENT)) {
+			res = actionDesc.split("Verify Element Displayed--");
+			desc = res[1].trim();
+			return "Can not verify the object " + desc + " is not displayed on the current screen";
+		}else if(action.equalsIgnoreCase(FIND_ACTION_PREFIX)) {
+			res = actionDesc.split("Proxy element for:");
+			desc = res[1].trim();
+			return "Can not find the object " + desc + " is not displayed on the current screen";
+		}
+		else {
+			return actionDesc;
+		}
+	}

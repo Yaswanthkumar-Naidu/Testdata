@@ -1,63 +1,61 @@
-    private String getElementName(WebElement targetElement) {
-        try {
-            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-            StackTraceElement caller = null;
-            
-            // Find the first non-Webkeywords caller
-            for (int i = 1; i < stackTrace.length; i++) {
-                if (!stackTrace[i].getClassName().equals(Webkeywords.class.getName())) {
-                    caller = stackTrace[i];
-                    break;
-                }
-            }
-
-            if (caller == null) {
-                return "unknown";
-            }
-
-            Class<?> callerClass = Class.forName(caller.getClassName());
-
-            // Check all fields, both static and non-static
-            for (Field field : callerClass.getDeclaredFields()) {
+ private String getElementName(WebElement targetElement) {
+        for (Class<?> clazz : getAllLoadedClasses()) {
+            // Check static fields
+            for (Field field : clazz.getDeclaredFields()) {
                 field.setAccessible(true);
                 if (WebElement.class.isAssignableFrom(field.getType())) {
                     try {
-                        Object fieldValue = field.get(null); // Try as static field
-                        if (fieldValue == targetElement) {
-                            return field.getName();
-                        }
-                    } catch (IllegalArgumentException e) {
-                        // Field is not static, ignore and continue
-                    }
-                }
-            }
-
-            // If we haven't found a match, check non-static fields
-            Object callerInstance = null;
-            try {
-                callerInstance = callerClass.getDeclaredConstructor().newInstance();
-            } catch (Exception e) {
-                // If we can't create an instance, we'll skip non-static fields
-            }
-
-            if (callerInstance != null) {
-                for (Field field : callerClass.getDeclaredFields()) {
-                    field.setAccessible(true);
-                    if (WebElement.class.isAssignableFrom(field.getType())) {
-                        try {
-                            Object fieldValue = field.get(callerInstance);
+                        if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
+                            Object fieldValue = field.get(null);
                             if (fieldValue == targetElement) {
                                 return field.getName();
                             }
-                        } catch (Exception e) {
-                            // Ignore any exceptions when accessing field values
+                        }
+                    } catch (IllegalAccessException e) {
+                        // Ignore and continue
+                    }
+                }
+            }
+
+            // Check non-static fields
+            List<Object> instances = getInstances(clazz);
+            for (Object instance : instances) {
+                for (Field field : clazz.getDeclaredFields()) {
+                    field.setAccessible(true);
+                    if (WebElement.class.isAssignableFrom(field.getType()) && !java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
+                        try {
+                            Object fieldValue = field.get(instance);
+                            if (fieldValue == targetElement) {
+                                return field.getName();
+                            }
+                        } catch (IllegalAccessException e) {
+                            // Ignore and continue
                         }
                     }
                 }
             }
-        } catch (Exception e) {
-            // Log the exception, but don't throw it
-            e.printStackTrace();
         }
         return "unknown";
+    }
+
+    private Class<?>[] getAllLoadedClasses() {
+        return sun.misc.VM.latestUserDefinedLoader().getLoadedClasses();
+    }
+
+    private List<Object> getInstances(Class<?> clazz) {
+        List<Object> instances = new ArrayList<>();
+        for (Field field : clazz.getDeclaredFields()) {
+            field.setAccessible(true);
+            if (field.getType().equals(clazz) && java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
+                try {
+                    Object instance = field.get(null);
+                    if (instance != null) {
+                        instances.add(instance);
+                    }
+                } catch (IllegalAccessException e) {
+                    // Ignore and continue
+                }
+            }
+        }
+        return instances;
     }

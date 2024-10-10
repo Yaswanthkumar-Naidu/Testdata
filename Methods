@@ -1,36 +1,61 @@
     private String getElementName(WebElement targetElement) {
         try {
             StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-            // Find the caller of the click method
             StackTraceElement caller = stackTrace[3]; // Adjust this index if needed
 
             Class<?> callerClass = Class.forName(caller.getClassName());
+            Object callerInstance = null;
 
             // Try to get an instance of the caller class
-            Object callerInstance = null;
             try {
                 callerInstance = callerClass.getDeclaredConstructor().newInstance();
             } catch (Exception e) {
                 // If we can't create an instance, we'll work with static fields only
             }
 
-            // Iterate through all fields in the caller class
+            // First, check static fields
             for (Field field : callerClass.getDeclaredFields()) {
                 field.setAccessible(true);
-                if (WebElement.class.isAssignableFrom(field.getType())) {
-                    Object fieldValue;
-                    if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
-                        fieldValue = field.get(null);
-                    } else if (callerInstance != null) {
-                        fieldValue = field.get(callerInstance);
-                    } else {
-                        continue; // Skip non-static fields if we don't have an instance
-                    }
-
+                    Object fieldValue = field.get(null);
                     if (fieldValue == targetElement) {
                         return field.getName();
                     }
                 }
+            }
+
+            // Then, check non-static fields if we have an instance
+            if (callerInstance != null) {
+                for (Field field : callerClass.getDeclaredFields()) {
+                    field.setAccessible(true);
+                    if (WebElement.class.isAssignableFrom(field.getType()) && !java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
+                        Object fieldValue = field.get(callerInstance);
+                        if (fieldValue == targetElement) {
+                            return field.getName();
+                        }
+                    }
+                }
+            }
+
+            // If we haven't found a match, check superclasses
+            Class<?> superClass = callerClass.getSuperclass();
+            while (superClass != null && !superClass.equals(Object.class)) {
+                for (Field field : superClass.getDeclaredFields()) {
+                    field.setAccessible(true);
+                    if (WebElement.class.isAssignableFrom(field.getType())) {
+                        if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
+                            Object fieldValue = field.get(null);
+                            if (fieldValue == targetElement) {
+                                return field.getName();
+                            }
+                        } else if (callerInstance != null) {
+                            Object fieldValue = field.get(callerInstance);
+                            if (fieldValue == targetElement) {
+                                return field.getName();
+                            }
+                        }
+                    }
+                }
+                superClass = superClass.getSuperclass();
             }
         } catch (Exception e) {
             e.printStackTrace();

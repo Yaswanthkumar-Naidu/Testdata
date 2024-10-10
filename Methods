@@ -1,5 +1,6 @@
  private String getElementName(WebElement targetElement) {
-        for (Class<?> clazz : getAllLoadedClasses()) {
+        Set<Class<?>> classes = getRelevantClasses();
+        for (Class<?> clazz : classes) {
             // Check static fields
             for (Field field : clazz.getDeclaredFields()) {
                 field.setAccessible(true);
@@ -38,8 +39,20 @@
         return "unknown";
     }
 
-    private Class<?>[] getAllLoadedClasses() {
-        return sun.misc.VM.latestUserDefinedLoader().getLoadedClasses();
+    private Set<Class<?>> getRelevantClasses() {
+        return Thread.currentThread().getStackTrace()
+            .stream()
+            .map(StackTraceElement::getClassName)
+            .filter(className -> !className.startsWith("java.") && !className.startsWith("sun.") && !className.equals(Webkeywords.class.getName()))
+            .map(className -> {
+                try {
+                    return Class.forName(className);
+                } catch (ClassNotFoundException e) {
+                    return null;
+                }
+            })
+            .filter(clazz -> clazz != null)
+            .collect(Collectors.toSet());
     }
 
     private List<Object> getInstances(Class<?> clazz) {

@@ -1,4 +1,4 @@
- private String getElementName(WebElement element) {
+    private String getElementName(WebElement targetElement) {
         try {
             StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
             // Find the caller of the click method
@@ -6,20 +6,30 @@
 
             Class<?> callerClass = Class.forName(caller.getClassName());
 
+            // Try to get an instance of the caller class
+            Object callerInstance = null;
+            try {
+                callerInstance = callerClass.getDeclaredConstructor().newInstance();
+            } catch (Exception e) {
+                // If we can't create an instance, we'll work with static fields only
+            }
+
             // Iterate through all fields in the caller class
             for (Field field : callerClass.getDeclaredFields()) {
                 field.setAccessible(true);
                 if (WebElement.class.isAssignableFrom(field.getType())) {
-                    // Check if the field is static
+                    Object fieldValue;
                     if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
-                        Object fieldValue = field.get(null);
-                        if (fieldValue == element) {
-                            return field.getName();
-                        }
+                        fieldValue = field.get(null);
+                    } else if (callerInstance != null) {
+                        fieldValue = field.get(callerInstance);
+                    } else {
+                        continue; // Skip non-static fields if we don't have an instance
                     }
-                    // If not static, we can't check its value without an instance
-                    // So we'll just return the first WebElement field name we find
-                    return field.getName();
+
+                    if (fieldValue == targetElement) {
+                        return field.getName();
+                    }
                 }
             }
         } catch (Exception e) {

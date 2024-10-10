@@ -1,4 +1,4 @@
-    private String getElementName(WebElement targetElement) {
+   private String getElementName(WebElement targetElement) {
         try {
             StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
             StackTraceElement caller = stackTrace[3]; // Adjust this index if needed
@@ -36,27 +36,6 @@
                 }
             }
 
-            // If we haven't found a match, check superclasses
-            Class<?> superClass = callerClass.getSuperclass();
-            while (superClass != null && !superClass.equals(Object.class)) {
-                for (Field field : superClass.getDeclaredFields()) {
-                    field.setAccessible(true);
-                    if (WebElement.class.isAssignableFrom(field.getType())) {
-                        if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
-                            Object fieldValue = field.get(null);
-                            if (fieldValue == targetElement) {
-                                return field.getName();
-                            }
-                        } else if (callerInstance != null) {
-                            Object fieldValue = field.get(callerInstance);
-                            if (fieldValue == targetElement) {
-                                return field.getName();
-                            }
-                        }
-                    }
-                }
-                superClass = superClass.getSuperclass();
-            }
         } catch (Exception e) {
             e.printStackTrace();
         }

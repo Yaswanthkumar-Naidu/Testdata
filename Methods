@@ -41,3 +41,30 @@ public String getActionDescription(String action,String actionDesc) {
 			return actionDesc;
 		}
 	}
+
+=========================
+ private String getElementName(WebElement element) {
+        try {
+            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+            for (int i = 1; i < stackTrace.length; i++) {
+                StackTraceElement ste = stackTrace[i];
+                if (!ste.getClassName().equals(Webkeywords.class.getName())) {
+                    Class<?> callerClass = Class.forName(ste.getClassName());
+                    for (Field field : callerClass.getDeclaredFields()) {
+                        field.setAccessible(true);
+                        if (WebElement.class.isAssignableFrom(field.getType())) {
+                            for (Object obj : callerClass.getEnumConstants()) {
+                                if (field.get(obj) == element) {
+                                    return field.getName();
+                                }
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "unknown";
+    }

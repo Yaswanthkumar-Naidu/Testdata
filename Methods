@@ -68,3 +68,35 @@ public String getActionDescription(String action,String actionDesc) {
         }
         return "unknown";
     }
+====================
+ private String getElementName(WebElement element) {
+        try {
+            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+            // Find the caller of the click method
+            StackTraceElement caller = stackTrace[3]; // Adjust this index if needed
+
+            Class<?> callerClass = Class.forName(caller.getClassName());
+            Object callerInstance = null;
+
+            // Try to get an instance of the caller class
+            try {
+                callerInstance = callerClass.getDeclaredConstructor().newInstance();
+            } catch (Exception e) {
+                // If we can't create an instance, we'll work with static fields only
+            }
+
+            // Iterate through all fields in the caller class
+            for (Field field : callerClass.getDeclaredFields()) {
+                field.setAccessible(true);
+                if (WebElement.class.isAssignableFrom(field.getType())) {
+                    Object fieldValue = field.get(callerInstance);
+                    if (fieldValue == element || (fieldValue != null && fieldValue.equals(element))) {
+                        return field.getName();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "unknown";
+    }

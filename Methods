@@ -1,74 +1,15 @@
- private String getElementName(WebElement targetElement) {
-        Set<Class<?>> classes = getRelevantClasses();
-        for (Class<?> clazz : classes) {
-            // Check static fields
-            for (Field field : clazz.getDeclaredFields()) {
-                field.setAccessible(true);
-                if (WebElement.class.isAssignableFrom(field.getType())) {
-                    try {
-                        if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
-                            Object fieldValue = field.get(null);
-                            if (fieldValue == targetElement) {
-                                return field.getName();
-                            }
-                        }
-                    } catch (IllegalAccessException e) {
-                        // Ignore and continue
-                    }
-                }
-            }
+   private String getElementName(WebElement element) {
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        String callerMethod = Arrays.stream(stackTrace)
+                .filter(ste -> !ste.getClassName().equals(Webkeywords.class.getName()))
+                .findFirst()
+                .map(StackTraceElement::getMethodName)
+                .orElse("unknown");
 
-            // Check non-static fields
-            List<Object> instances = getInstances(clazz);
-            for (Object instance : instances) {
-                for (Field field : clazz.getDeclaredFields()) {
-                    field.setAccessible(true);
-                    if (WebElement.class.isAssignableFrom(field.getType()) && !java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
-                        try {
-                            Object fieldValue = field.get(instance);
-                            if (fieldValue == targetElement) {
-                                return field.getName();
-                            }
-                        } catch (IllegalAccessException e) {
-                            // Ignore and continue
-                        }
-                    }
-                }
-            }
-        }
-        return "unknown";
-    }
+        String elementString = element.toString();
+        Pattern pattern = Pattern.compile("->\\s+(\\w+):");
+        Matcher matcher = pattern.matcher(elementString);
+        String elementType = matcher.find() ? matcher.group(1) : "element";
 
-    private Set<Class<?>> getRelevantClasses() {
-        return Thread.currentThread().getStackTrace()
-            .stream()
-            .map(StackTraceElement::getClassName)
-            .filter(className -> !className.startsWith("java.") && !className.startsWith("sun.") && !className.equals(Webkeywords.class.getName()))
-            .map(className -> {
-                try {
-                    return Class.forName(className);
-                } catch (ClassNotFoundException e) {
-                    return null;
-                }
-            })
-            .filter(clazz -> clazz != null)
-            .collect(Collectors.toSet());
-    }
-
-    private List<Object> getInstances(Class<?> clazz) {
-        List<Object> instances = new ArrayList<>();
-        for (Field field : clazz.getDeclaredFields()) {
-            field.setAccessible(true);
-            if (field.getType().equals(clazz) && java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
-                try {
-                    Object instance = field.get(null);
-                    if (instance != null) {
-                        instances.add(instance);
-                    }
-                } catch (IllegalAccessException e) {
-                    // Ignore and continue
-                }
-            }
-        }
-        return instances;
+        return callerMethod + "_" + elementType;
     }
